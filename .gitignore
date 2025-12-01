@@ -1,0 +1,11 @@
+build/
+.venv/
+data/seriesscope.db
+*.o
+*.a
+*.pyc
+__pycache__/
+.DS_Store
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
