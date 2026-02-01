@@ -6,6 +6,6 @@
 namespace seriesscope {
 class ExplanationEngine {
 public:
-    static AnalysisReport analyze(const TeamProfile& home, const TeamProfile& away);
+    static AnalysisReport analyze(const TeamProfile& home, const TeamProfile& away, double homeWinPct, double awayWinPct);
 };
 }

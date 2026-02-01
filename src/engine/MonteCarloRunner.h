@@ -2,11 +2,10 @@
 #include "../models/TeamProfile.h"
 #include "../models/ScenarioConfig.h"
 #include "../models/SimulationResult.h"
-#include <functional>
 
 namespace seriesscope {
 class MonteCarloRunner {
 public:
-    static AggregatedResults run(const TeamProfile& home, const TeamProfile& away, const ScenarioConfig& config, int iterations, std::function<void(int)> progressCallback = nullptr);
+    static AggregatedResults run(const TeamProfile& home, const TeamProfile& away, const ScenarioConfig& config, int iterations);
 };
 }
