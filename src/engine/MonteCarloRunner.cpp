@@ -1,31 +1,97 @@
-#include "MonteCarloRunner.h"
-#include "SeriesSimulator.h"
+#include "engine/MonteCarloRunner.h"
 #include <thread>
-#include <future>
 #include <vector>
+#include <algorithm>
 
-namespace seriesscope {
-AggregatedResults MonteCarloRunner::run(const TeamProfile& home, const TeamProfile& away, const ScenarioConfig& config, int iterations) {
-    int threads = std::max(1, (int)std::thread::hardware_concurrency());
-    int per_thread = iterations / threads;
-    std::vector<std::future<int>> futures;
-    for (int t = 0; t < threads; ++t) {
-        futures.push_back(std::async(std::launch::async, [=, &home, &away, &config]() {
-            uint32_t seed = t * 2654435761U;
-            std::mt19937 gen(seed);
-            SeriesSimulator sim(home, away, config);
-            int wins = 0;
-            for (int i = 0; i < per_thread; ++i) {
-                if (sim.simulateOneSeries(gen).home_won_series) wins++;
-            }
-            return wins;
-        }));
+namespace ss {
+
+MonteCarloRunner::MonteCarloRunner()
+    : model_()
+    , simulator_(model_)
+{}
+
+// static
+uint64_t MonteCarloRunner::deriveThreadSeed(uint64_t master, int thread_index) {
+    // Knuth multiplicative hash to spread seeds independently.
+    // Using 0x9e3779b97f4a7c15 (golden-ratio-based constant) ensures that
+    // even adjacent thread indices map to distant seed values.
+    return master ^ (static_cast<uint64_t>(thread_index + 1) * 0x9e3779b97f4a7c15ULL);
+}
+
+// static
+void MonteCarloRunner::workerFn(
+    const SeriesSimulator& sim,
+    const TeamProfile&     a,
+    const TeamProfile&     b,
+    const ScenarioConfig&  cfg,
+    uint64_t               thread_seed,
+    int                    num_trials,
+    AggregatedResults&     out)
+{
+    std::mt19937_64 rng(thread_seed);
+    out.total_simulations = num_trials;
+    double total_length   = 0.0;
+
+    for (int i = 0; i < num_trials; ++i) {
+        auto outcome = sim.simulateOnce(a, b, cfg, rng);
+        int  idx     = outcome.games_played - 4;  // [0..3]
+
+        if (outcome.team_a_wins) {
+            ++out.team_a_series_wins;
+            ++out.team_a_by_length[idx];
+        } else {
+            ++out.team_b_series_wins;
+            ++out.team_b_by_length[idx];
+        }
+        total_length += outcome.games_played;
     }
-    int total_wins = 0;
-    for (auto& f : futures) total_wins += f.get();
-    AggregatedResults res;
-    res.home_win_prob = (double)total_wins / iterations;
-    res.simulation_count = iterations;
-    return res;
+
+    out.avg_series_length = num_trials > 0 ? total_length / num_trials : 0.0;
 }
+
+AggregatedResults MonteCarloRunner::run(
+    const TeamProfile&    a,
+    const TeamProfile&    b,
+    const ScenarioConfig& cfg) const
+{
+    const int hardware_threads = static_cast<int>(
+        std::max(1u, std::thread::hardware_concurrency()));
+    const int num_threads  = std::min(hardware_threads, cfg.num_simulations);
+    const int base_sims    = cfg.num_simulations / num_threads;
+    const int remainder    = cfg.num_simulations % num_threads;
+
+    std::vector<AggregatedResults> thread_results(num_threads);
+    std::vector<std::thread>       threads;
+    threads.reserve(num_threads);
+
+    for (int i = 0; i < num_threads; ++i) {
+        int  this_sims = base_sims + (i == 0 ? remainder : 0);
+        auto seed      = deriveThreadSeed(cfg.rng_seed, i);
+
+        threads.emplace_back(
+            workerFn,
+            std::cref(simulator_),
+            a, b, cfg,
+            seed, this_sims,
+            std::ref(thread_results[i]));
+    }
+
+    for (auto& t : threads) t.join();
+
+    AggregatedResults final_result;
+    double total_length_sum  = 0.0;
+    int    total_sims_merged = 0;
+
+    for (const auto& r : thread_results) {
+        total_length_sum  += r.avg_series_length * r.total_simulations;
+        total_sims_merged += r.total_simulations;
+        final_result.merge(r);
+    }
+
+    if (total_sims_merged > 0)
+        final_result.avg_series_length = total_length_sum / total_sims_merged;
+
+    return final_result;
 }
+
+} // namespace ss
