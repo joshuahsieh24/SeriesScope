@@ -54,9 +54,16 @@ AggregatedResults MonteCarloRunner::run(
     const TeamProfile&    b,
     const ScenarioConfig& cfg) const
 {
+    if (cfg.num_simulations <= 0) {
+        return {};
+    }
+
     const int hardware_threads = static_cast<int>(
         std::max(1u, std::thread::hardware_concurrency()));
-    const int num_threads  = std::min(hardware_threads, cfg.num_simulations);
+    const int requested_threads = cfg.thread_count_override > 0
+        ? cfg.thread_count_override
+        : hardware_threads;
+    const int num_threads  = std::max(1, std::min(requested_threads, cfg.num_simulations));
     const int base_sims    = cfg.num_simulations / num_threads;
     const int remainder    = cfg.num_simulations % num_threads;
 

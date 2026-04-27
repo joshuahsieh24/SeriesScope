@@ -1,21 +1,32 @@
 #pragma once
-#include <string>
-#include <nlohmann/json.hpp>
 
-namespace seriesscope {
+#include <string>
+
+namespace ss {
+
 struct TeamProfile {
     std::string id;
     std::string name;
     std::string abbreviation;
-    double off_rating;
-    double def_rating;
-    double net_rating;
-    double eFG_pct;
-    double TOV_pct;
-    double ORB_pct;
-    double FT_rate;
+    double off_rating = 0.0;
+    double def_rating = 0.0;
+    double net_rating = 0.0;
+    double eFG_pct    = 0.0;
+    double TOV_pct    = 0.0;
+    double ORB_pct    = 0.0;
+    double FT_rate    = 0.0;
     std::string primary_color;
 
-    NLOHMANN_DEFINE_TYPE_INTRUSIVE(TeamProfile, id, name, abbreviation, off_rating, def_rating, net_rating, eFG_pct, TOV_pct, ORB_pct, FT_rate, primary_color)
+    int    wins         = 0;
+    int    losses       = 0;
+    double recent_form  = 0.0;
+    double star_impact  = 1.0;
+    double volatility   = 0.20;
+    double depth_rating = 0.50;
 };
+
+} // namespace ss
+
+namespace seriesscope {
+using TeamProfile = ss::TeamProfile;
 }

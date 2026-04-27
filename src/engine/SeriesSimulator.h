@@ -1,16 +1,26 @@
 #pragma once
-#include "../models/TeamProfile.h"
-#include "../models/ScenarioConfig.h"
-#include "../models/SimulationResult.h"
+
+#include "engine/GameProbabilityModel.h"
+#include "models/ScenarioConfig.h"
+#include "models/SimulationResult.h"
+#include "models/TeamProfile.h"
+
 #include <random>
 
-namespace seriesscope {
+namespace ss {
+
 class SeriesSimulator {
 public:
-    SeriesSimulator(const TeamProfile& home, const TeamProfile& away, const ScenarioConfig& config);
-    SimulationResult simulateOneSeries(std::mt19937& gen);
+    explicit SeriesSimulator(const GameProbabilityModel& model);
+
+    SimulationResult simulateOnce(
+        const TeamProfile&    a,
+        const TeamProfile&    b,
+        const ScenarioConfig& cfg,
+        std::mt19937_64&      rng) const;
+
 private:
-    TeamProfile home, away;
-    ScenarioConfig config;
+    const GameProbabilityModel& model_;
 };
-}
+
+} // namespace ss
