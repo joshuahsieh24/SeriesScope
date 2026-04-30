@@ -1,7 +1,21 @@
 import time
 import sqlite3
+from datetime import date
 import pandas as pd
 from nba_api.stats.endpoints import leaguedashteamstats, leaguedashplayerstats, leaguedashplayerclutch
+
+
+def current_nba_season() -> str:
+    """Derive the active NBA season string from today's date.
+
+    The NBA regular season starts in October, so:
+      Oct–Dec  →  season starting this calendar year  (e.g. 2025-26)
+      Jan–Sep  →  season starting the prior year      (e.g. 2024-25)
+    """
+    today = date.today()
+    start_year = today.year if today.month >= 10 else today.year - 1
+    return f"{start_year}-{str(start_year + 1)[-2:]}"
+
 
 TEAM_ABBR = {
     "1610612738": "BOS",
@@ -9,12 +23,14 @@ TEAM_ABBR = {
     # ...
 }
 
-def fetch_team_stats(season="2023-24"):
+def fetch_team_stats(season=None):
+    season = season or current_nba_season()
     # Fix for param rename in latest nba_api
     stats = leaguedashteamstats.LeagueDashTeamStats(season=season, measure_type_detailed_defense="Advanced").get_data_frames()[0]
     return stats
 
-def fetch_player_base_stats(season="2023-24"):
+def fetch_player_base_stats(season=None):
+    season = season or current_nba_season()
     time.sleep(0.6)
     df = leaguedashplayerstats.LeagueDashPlayerStats(
         season=season,
@@ -22,7 +38,8 @@ def fetch_player_base_stats(season="2023-24"):
     ).get_data_frames()[0]
     return df[["PLAYER_ID", "PLAYER_NAME", "TEAM_ID", "MIN", "PTS", "STL", "BLK", "GP"]].copy()
 
-def fetch_player_advanced_stats(season="2023-24"):
+def fetch_player_advanced_stats(season=None):
+    season = season or current_nba_season()
     time.sleep(0.6)
     df = leaguedashplayerstats.LeagueDashPlayerStats(
         season=season,
@@ -31,7 +48,8 @@ def fetch_player_advanced_stats(season="2023-24"):
     return df[["PLAYER_ID", "TEAM_ID", "USG_PCT", "OFF_RATING", "DEF_RATING",
                "TS_PCT", "AST_PCT", "DREB_PCT", "STL_PCT", "BLK_PCT"]].copy()
 
-def fetch_player_clutch_stats(season="2023-24"):
+def fetch_player_clutch_stats(season=None):
+    season = season or current_nba_season()
     time.sleep(0.6)
     df = leaguedashplayerclutch.LeagueDashPlayerClutch(
         season=season,
@@ -41,7 +59,7 @@ def fetch_player_clutch_stats(season="2023-24"):
     result = result.rename(columns={"MIN": "CLUTCH_MIN", "PTS": "CLUTCH_PTS", "PLUS_MINUS": "CLUTCH_PLUS_MINUS"})
     return result
 
-def build_player_data(season="2023-24"):
+def build_player_data(season=None):
     base     = fetch_player_base_stats(season)
     advanced = fetch_player_advanced_stats(season)
     clutch   = fetch_player_clutch_stats(season)
