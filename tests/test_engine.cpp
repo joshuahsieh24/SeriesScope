@@ -172,3 +172,26 @@ TEST(MonteCarloRunnerTest, SameSeedSameResultMultiThread) {
     EXPECT_EQ(r1.team_a_by_length,   r2.team_a_by_length);
     EXPECT_EQ(r1.team_b_by_length,   r2.team_b_by_length);
 }
+
+TEST(MonteCarloRunnerTest, DifferentSeedsProduceDifferentResults) {
+    MonteCarloRunner runner;
+    TeamProfile a = makeTeam(4.0);
+    TeamProfile b = makeTeam(0.0);
+    ScenarioConfig cfg1 = defaultCfg(20000, 0xAAAAAAAAULL);
+    ScenarioConfig cfg2 = defaultCfg(20000, 0xBBBBBBBBULL);
+    cfg1.thread_count_override = cfg2.thread_count_override = 1;
+
+    auto r1 = runner.run(a, b, cfg1);
+    auto r2 = runner.run(a, b, cfg2);
+
+    // Seeds differ → at least one count must differ (astronomically unlikely otherwise)
+    EXPECT_NE(r1.team_a_series_wins, r2.team_a_series_wins);
+}
+
+TEST(MonteCarloRunnerTest, StrongTeamWinsMoreOften) {
+    MonteCarloRunner runner;
+    TeamProfile strong = makeTeam(12.0);
+    TeamProfile weak   = makeTeam(-4.0);
+    auto result = runner.run(strong, weak, defaultCfg(20000));
+    EXPECT_GT(result.team_a_win_pct(), 0.70);
+}
