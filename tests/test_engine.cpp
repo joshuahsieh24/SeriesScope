@@ -82,3 +82,16 @@ TEST(GameProbabilityModelTest, ProbabilityClampedBelow) {
     EXPECT_GT(p, 0.0);
     EXPECT_LE(p, 1.0);
 }
+
+TEST(GameProbabilityModelTest, StarUnavailabilityReducesWinProb) {
+    TeamProfile a = makeTeam(5.0);
+    TeamProfile b = makeTeam(0.0);
+    GameProbabilityModel model;
+    ScenarioConfig full = defaultCfg();
+    full.team_a_star_avail = 1.0;
+    ScenarioConfig injured = defaultCfg();
+    injured.team_a_star_avail = 0.0;
+    double p_full    = model.computeWinProbability(a, b, full,    true);
+    double p_injured = model.computeWinProbability(a, b, injured, true);
+    EXPECT_GT(p_full, p_injured);
+}
