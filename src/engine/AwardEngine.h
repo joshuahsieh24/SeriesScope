@@ -24,8 +24,14 @@ private:
     AwardResult computeClutch   (const std::vector<PlayerProfile>& pool) const;
     AwardResult computeXFactor  (const std::vector<PlayerProfile>& pool) const;
 
+    // Scores every player, returns {winner_index, normalized_score ∈ [0,1]}.
+    template <typename Scorer>
+    std::pair<std::size_t, double> selectWinner(
+        const std::vector<PlayerProfile>& pool,
+        Scorer scorer) const;
+
     // Scales raw scores to [0, 1] relative to pool min/max.
-    // Returns the score unchanged if all scores are equal (avoids division by zero).
+    // Returns 1.0 if all scores are equal (avoids division by zero).
     static double normalize(double val, double minVal, double maxVal);
 };
 
