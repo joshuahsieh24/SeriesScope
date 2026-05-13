@@ -52,3 +52,33 @@ TEST(GameProbabilityModelTest, BasicWinProb) {
     double p = model.computeWinProbability(a, b, cfg, /*a_is_home=*/true);
     EXPECT_GT(p, 0.5);
 }
+
+TEST(GameProbabilityModelTest, HomeCourtAdvantageIsSymmetric) {
+    TeamProfile a = makeTeam(0.0);
+    TeamProfile b = makeTeam(0.0);
+    ScenarioConfig cfg = defaultCfg();
+    GameProbabilityModel model;
+    double home_p = model.computeWinProbability(a, b, cfg, true);
+    double away_p = model.computeWinProbability(a, b, cfg, false);
+    EXPECT_NEAR(home_p + away_p, 1.0, 1e-9);
+    EXPECT_GT(home_p, 0.5);
+}
+
+TEST(GameProbabilityModelTest, ProbabilityClampedAbove) {
+    // Extreme net rating advantage should not reach 1.0
+    TeamProfile a = makeTeam(50.0);
+    TeamProfile b = makeTeam(-50.0);
+    GameProbabilityModel model;
+    double p = model.computeWinProbability(a, b, defaultCfg(), true);
+    EXPECT_LT(p, 1.0);
+    EXPECT_GE(p, 0.0);
+}
+
+TEST(GameProbabilityModelTest, ProbabilityClampedBelow) {
+    TeamProfile a = makeTeam(-50.0);
+    TeamProfile b = makeTeam(50.0);
+    GameProbabilityModel model;
+    double p = model.computeWinProbability(a, b, defaultCfg(), false);
+    EXPECT_GT(p, 0.0);
+    EXPECT_LE(p, 1.0);
+}
