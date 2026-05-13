@@ -52,7 +52,19 @@ double GameProbabilityModel::computeWinProbability(
         -(1.0 - cfg.team_a_star_avail) * a.star_impact * STAR_VALUE_PTS
         +(1.0 - cfg.team_b_star_avail) * b.star_impact * STAR_VALUE_PTS;
 
-    double total = eff_pts + wpc_pts + form_pts + home_pts + star_pts;
+    // ── Component 6: Dean Oliver Four Factors ────────────────────────────
+    // eFG%, TOV%, ORB%, FT_rate are already ingested; this wires them into
+    // the logit so all fetched data affects predictions.
+    // TOV is flipped (lower turnover rate is better for team A → positive term).
+    // Oliver's empirical weights: eFG 40%, TOV 25%, ORB 20%, FT 15%.
+    double ff_delta =
+        (a.eFG_pct - b.eFG_pct) * 0.40
+      + (b.TOV_pct - a.TOV_pct) * 0.25
+      + (a.ORB_pct - b.ORB_pct) * 0.20
+      + (a.FT_rate - b.FT_rate) * 0.15;
+    double ff_pts = ff_delta * FOUR_FACTORS_SCALE;
+
+    double total = eff_pts + wpc_pts + form_pts + home_pts + star_pts + ff_pts;
     double p     = logistic(total / LOGISTIC_SCALE);
 
     // Clamp to avoid degenerate probabilities from extreme inputs.
