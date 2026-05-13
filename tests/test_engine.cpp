@@ -136,3 +136,39 @@ TEST(GameProbabilityModelTest, EqualFourFactorsNoEdge) {
     double p = model.computeWinProbability(a, b, defaultCfg(), false);
     EXPECT_NEAR(p, 0.5, 0.02);
 }
+
+// ---------------------------------------------------------------------------
+// MonteCarloRunner — seed determinism (Feature 2)
+// ---------------------------------------------------------------------------
+
+TEST(MonteCarloRunnerTest, SameSeedSameResultSingleThread) {
+    MonteCarloRunner runner;
+    TeamProfile a = makeTeam(8.0);
+    TeamProfile b = makeTeam(0.0);
+    ScenarioConfig cfg = defaultCfg(5000);
+    cfg.thread_count_override = 1;
+
+    auto r1 = runner.run(a, b, cfg);
+    auto r2 = runner.run(a, b, cfg);
+
+    EXPECT_EQ(r1.team_a_series_wins, r2.team_a_series_wins);
+    EXPECT_EQ(r1.team_b_series_wins, r2.team_b_series_wins);
+    EXPECT_EQ(r1.team_a_by_length,   r2.team_a_by_length);
+    EXPECT_EQ(r1.team_b_by_length,   r2.team_b_by_length);
+}
+
+TEST(MonteCarloRunnerTest, SameSeedSameResultMultiThread) {
+    MonteCarloRunner runner;
+    TeamProfile a = makeTeam(8.0);
+    TeamProfile b = makeTeam(0.0);
+    ScenarioConfig cfg = defaultCfg(5000);
+    cfg.thread_count_override = 4;
+
+    auto r1 = runner.run(a, b, cfg);
+    auto r2 = runner.run(a, b, cfg);
+
+    EXPECT_EQ(r1.team_a_series_wins, r2.team_a_series_wins);
+    EXPECT_EQ(r1.team_b_series_wins, r2.team_b_series_wins);
+    EXPECT_EQ(r1.team_a_by_length,   r2.team_a_by_length);
+    EXPECT_EQ(r1.team_b_by_length,   r2.team_b_by_length);
+}
