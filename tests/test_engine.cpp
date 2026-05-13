@@ -195,3 +195,25 @@ TEST(MonteCarloRunnerTest, StrongTeamWinsMoreOften) {
     auto result = runner.run(strong, weak, defaultCfg(20000));
     EXPECT_GT(result.team_a_win_pct(), 0.70);
 }
+
+TEST(MonteCarloRunnerTest, WinCountsSumToTotalSimulations) {
+    MonteCarloRunner runner;
+    TeamProfile a = makeTeam(5.0);
+    TeamProfile b = makeTeam(0.0);
+    ScenarioConfig cfg = defaultCfg(8000);
+    auto r = runner.run(a, b, cfg);
+    EXPECT_EQ(r.team_a_series_wins + r.team_b_series_wins, r.total_simulations);
+    EXPECT_EQ(r.total_simulations, 8000);
+}
+
+TEST(MonteCarloRunnerTest, SeriesLengthBucketsConsistent) {
+    MonteCarloRunner runner;
+    TeamProfile a = makeTeam(5.0);
+    TeamProfile b = makeTeam(0.0);
+    auto r = runner.run(a, b, defaultCfg(10000));
+
+    int bucket_sum = 0;
+    for (int v : r.team_a_by_length) bucket_sum += v;
+    for (int v : r.team_b_by_length) bucket_sum += v;
+    EXPECT_EQ(bucket_sum, r.total_simulations);
+}
