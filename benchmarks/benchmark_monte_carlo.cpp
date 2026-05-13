@@ -203,10 +203,11 @@ void seedBenchmarkDb(const std::filesystem::path& path) {
 std::pair<ss::TeamProfile, ss::TeamProfile> loadMatchup(const std::filesystem::path& path) {
     seriesscope::DatabaseManager db(path.string());
     seriesscope::TeamRepository repo(db);
-    return {
-        repo.getTeamById("1610612738"),
-        repo.getTeamById("1610612743"),
-    };
+    auto a = repo.getTeamById("1610612738");
+    auto b = repo.getTeamById("1610612743");
+    if (!a || !b)
+        throw std::runtime_error("Benchmark fixture team not found in DB");
+    return { *a, *b };
 }
 
 std::string nowTimestamp() {
