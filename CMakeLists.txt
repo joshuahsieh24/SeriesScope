@@ -5,6 +5,8 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+include(FetchContent)
+
 option(BUILD_APP "Build the Qt desktop app" OFF)
 option(BUILD_TESTS "Build unit tests" OFF)
 option(BUILD_BENCHMARKS "Build benchmark targets" ON)
