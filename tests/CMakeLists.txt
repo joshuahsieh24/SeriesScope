@@ -6,6 +6,7 @@ add_executable(series_scope_tests
     test_engine.cpp
     test_award_engine.cpp
     test_player_repository.cpp
+    test_team_repository.cpp
 )
 target_link_libraries(series_scope_tests GTest::gtest_main SeriesScopeLib)
 include(GoogleTest)
