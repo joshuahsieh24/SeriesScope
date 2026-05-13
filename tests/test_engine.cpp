@@ -1,17 +1,54 @@
 #include <gtest/gtest.h>
 #include "../src/engine/GameProbabilityModel.h"
+#include "../src/engine/MonteCarloRunner.h"
 #include "../src/models/TeamProfile.h"
 #include "../src/models/ScenarioConfig.h"
 
-using namespace seriesscope;
+using namespace ss;
 
-TEST(GameProbabilityModelTest, BasicWinProb) {
-    TeamProfile t1; t1.off_rating = 120; t1.def_rating = 110;
-    TeamProfile t2; t2.off_rating = 110; t2.def_rating = 110;
-    ScenarioConfig config;
-    double p = GameProbabilityModel::calculateHomeWinProb(t1, t2, config);
-    EXPECT_GT(p, 0.5);
+// ---------------------------------------------------------------------------
+// Test fixtures
+// ---------------------------------------------------------------------------
+
+static TeamProfile makeTeam(double net_rating, double win_pct_frac = 0.5,
+                             double eFG = 0.55, double TOV = 0.13,
+                             double ORB = 0.25, double FT = 0.20) {
+    TeamProfile t;
+    t.net_rating  = net_rating;
+    t.off_rating  = 115.0 + net_rating / 2.0;
+    t.def_rating  = 115.0 - net_rating / 2.0;
+    t.wins        = static_cast<int>(82 * win_pct_frac);
+    t.losses      = 82 - t.wins;
+    t.recent_form = 0.0;
+    t.star_impact = 1.0;
+    t.volatility  = 0.20;
+    t.depth_rating = 0.50;
+    t.eFG_pct     = eFG;
+    t.TOV_pct     = TOV;
+    t.ORB_pct     = ORB;
+    t.FT_rate     = FT;
+    return t;
 }
 
-// ... 18 more tests would go here ...
+static ScenarioConfig defaultCfg(int n = 10000, uint64_t seed = 0xC0FFEE1234ULL) {
+    ScenarioConfig cfg;
+    cfg.num_simulations      = n;
+    cfg.rng_seed             = seed;
+    cfg.team_a_has_home_court = true;
+    cfg.team_a_star_avail    = 1.0;
+    cfg.team_b_star_avail    = 1.0;
+    return cfg;
+}
 
+// ---------------------------------------------------------------------------
+// GameProbabilityModel — baseline
+// ---------------------------------------------------------------------------
+
+TEST(GameProbabilityModelTest, BasicWinProb) {
+    TeamProfile a = makeTeam(10.0);
+    TeamProfile b = makeTeam(0.0);
+    ScenarioConfig cfg = defaultCfg();
+    GameProbabilityModel model;
+    double p = model.computeWinProbability(a, b, cfg, /*a_is_home=*/true);
+    EXPECT_GT(p, 0.5);
+}
