@@ -217,3 +217,24 @@ TEST(MonteCarloRunnerTest, SeriesLengthBucketsConsistent) {
     for (int v : r.team_b_by_length) bucket_sum += v;
     EXPECT_EQ(bucket_sum, r.total_simulations);
 }
+
+TEST(MonteCarloRunnerTest, ZeroSimulationsReturnsEmpty) {
+    MonteCarloRunner runner;
+    TeamProfile a = makeTeam(5.0);
+    TeamProfile b = makeTeam(0.0);
+    ScenarioConfig cfg = defaultCfg(0);
+    auto r = runner.run(a, b, cfg);
+    EXPECT_EQ(r.total_simulations,   0);
+    EXPECT_EQ(r.team_a_series_wins,  0);
+    EXPECT_EQ(r.team_b_series_wins,  0);
+    EXPECT_DOUBLE_EQ(r.avg_series_length, 0.0);
+}
+
+TEST(MonteCarloRunnerTest, AvgSeriesLengthBounded) {
+    MonteCarloRunner runner;
+    TeamProfile a = makeTeam(3.0);
+    TeamProfile b = makeTeam(0.0);
+    auto r = runner.run(a, b, defaultCfg(10000));
+    EXPECT_GE(r.avg_series_length, 4.0);
+    EXPECT_LE(r.avg_series_length, 7.0);
+}
